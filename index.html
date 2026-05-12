@@ -447,14 +447,9 @@
 
 <script>
 (function () {
-  /* Unlock audio on very first touch/click for iOS/Android */
-  function _unlockOnce(){
-    Tone.start().catch(()=>{});
-    document.removeEventListener('touchstart',_unlockOnce,true);
-    document.removeEventListener('mousedown',_unlockOnce,true);
-  }
-  document.addEventListener('touchstart',_unlockOnce,{once:true,capture:true});
-  document.addEventListener('mousedown',_unlockOnce,{once:true,capture:true});
+  document.addEventListener('touchstart', ensureAudio, {once:false, passive:true});
+  document.addEventListener('mousedown',  ensureAudio, {once:false, passive:true});
+  
   const ANIMAL_NAMES = ['小熊', '小鴨', '小兔', '小貓', '青蛙'];
   let shuffledAnimals = [];
   const NOTES = ['C4', 'E4', 'G4', 'B4', 'C5'];
@@ -467,14 +462,24 @@
     `<svg width="36" height="32" viewBox="0 0 38 34"><circle cx="10" cy="12" r="6" fill="#60C050"/><circle cx="28" cy="12" r="6" fill="#60C050"/><circle cx="10" cy="11" r="4" fill="white"/><circle cx="28" cy="11" r="4" fill="white"/><circle cx="10" cy="11" r="2.5" fill="#3A2010"/><circle cx="28" cy="11" r="2.5" fill="#3A2010"/><circle cx="9.2" cy="10.2" r=".8" fill="white"/><circle cx="27.2" cy="10.2" r=".8" fill="white"/><ellipse cx="19" cy="23" rx="13" ry="9" fill="#60C050"/><ellipse cx="19" cy="26" rx="9" ry="5" fill="#90E880"/><path d="M14 23 Q19 27 24 23" stroke="#3A7030" stroke-width="1.5" fill="none" stroke-linecap="round"/><ellipse cx="8" cy="29" rx="5" ry="3" fill="#60C050"/><ellipse cx="30" cy="29" rx="5" ry="3" fill="#60C050"/></svg>`
   ];
   let nextExpected = 1, placedCount = 0;
-  let audioReady = false, marimba = null;
+  let marimba=null, audioReady=false;
   let dragNum = null, ghostOffX = 0, ghostOffY = 0, activeSlot = null;
 
   /* ── Audio ── */
-  function initAudio() {
-    if (audioReady) return;
-    marimba = new Tone.Synth({
-      oscillator: { type: 'triangle' },
+  function initSound(){
+    if(audioReady||!window.Tone)return;
+    try{
+      marimba=new Tone.Synth({
+        oscillator:{type:'triangle'},
+        envelope:{attack:.002,decay:.35,sustain:.1,release:.6}
+      }).toDestination();
+      audioReady=true;
+    }catch(e){console.warn('音效初始化失敗',e);}
+  }
+  function ensureAudio(){
+    if(window.Tone&&Tone.context.state!=='running') Tone.start();
+  }
+  function initAudio(){ initSound(); ensureAudio(); },
       envelope: { attack: .002, decay: .35, sustain: .1, release: .6 }
     }).toDestination();
     audioReady = true;
