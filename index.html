@@ -447,6 +447,14 @@
 
 <script>
 (function () {
+  /* Unlock audio on very first touch/click for iOS/Android */
+  function _unlockOnce(){
+    Tone.start().catch(()=>{});
+    document.removeEventListener('touchstart',_unlockOnce,true);
+    document.removeEventListener('mousedown',_unlockOnce,true);
+  }
+  document.addEventListener('touchstart',_unlockOnce,{once:true,capture:true});
+  document.addEventListener('mousedown',_unlockOnce,{once:true,capture:true});
   const ANIMAL_NAMES = ['小熊', '小鴨', '小兔', '小貓', '青蛙'];
   let shuffledAnimals = [];
   const NOTES = ['C4', 'E4', 'G4', 'B4', 'C5'];
@@ -477,7 +485,7 @@
   }
   function playError() {
     initAudio();
-    try { Tone.start(); marimba.triggerAttackRelease('A3', '16n', Tone.now()); } catch (e) {}
+    try { Tone.start().then(()=>marimba.triggerAttackRelease('A3','16n',Tone.now())); } catch(e) {}
   }
   function playFanfare() {
     initAudio();
