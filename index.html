@@ -477,30 +477,32 @@
     } catch(e) { console.warn('音效初始化失敗', e); }
   }
 
-  function ensureAudio() {
-    if (window.Tone && Tone.context.state !== 'running') Tone.start();
+  async function ensureAudio() {
+    if (window.Tone && Tone.context.state !== 'running') {
+      try { await Tone.start(); } catch(e) {}
+    }
   }
 
-  function playNote(n) {
+  async function playNote(n) {
     try {
-      ensureAudio();
-      if (!marimba || Tone.context.state !== 'running') return;
+      await ensureAudio();
+      if (!marimba) return;
       marimba.triggerAttackRelease(NOTES[Math.min(n-1, NOTES.length-1)], '8n', Tone.now());
     } catch(e) {}
   }
 
-  function playError() {
+  async function playError() {
     try {
-      ensureAudio();
-      if (!marimba || Tone.context.state !== 'running') return;
+      await ensureAudio();
+      if (!marimba) return;
       marimba.triggerAttackRelease('A3', '16n', Tone.now());
     } catch(e) {}
   }
 
-  function playFanfare() {
+  async function playFanfare() {
     try {
-      ensureAudio();
-      if (!marimba || Tone.context.state !== 'running') return;
+      await ensureAudio();
+      if (!marimba) return;
       const now = Tone.now();
       ['C4','E4','G4','C5','E5','G5'].forEach((n,i) => marimba.triggerAttackRelease(n, '8n', now + i * .14));
     } catch(e) {}
@@ -763,7 +765,7 @@
   }
 
   window.initGame = initGame;
-  initSound();
+  if(document.readyState==='complete'){ initSound(); } else { window.addEventListener('load', initSound); }
   initGame();
 
   window.addEventListener('resize', buildRails);
