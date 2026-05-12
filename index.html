@@ -447,8 +447,9 @@
 
 <script>
 (function () {
-  document.addEventListener('touchstart', ensureAudio, {once:false, passive:true});
-  document.addEventListener('mousedown',  ensureAudio, {once:false, passive:true});
+  document.addEventListener('touchstart', function au(){ if(window.Tone) Tone.start(); document.removeEventListener('touchstart', au); }, {passive:true});
+  document.addEventListener('mousedown',  function au(){ if(window.Tone) Tone.start(); document.removeEventListener('mousedown',  au); }, {passive:true});
+
   
   const ANIMAL_NAMES = ['小熊', '小鴨', '小兔', '小貓', '青蛙'];
   let shuffledAnimals = [];
@@ -462,46 +463,49 @@
     `<svg width="36" height="32" viewBox="0 0 38 34"><circle cx="10" cy="12" r="6" fill="#60C050"/><circle cx="28" cy="12" r="6" fill="#60C050"/><circle cx="10" cy="11" r="4" fill="white"/><circle cx="28" cy="11" r="4" fill="white"/><circle cx="10" cy="11" r="2.5" fill="#3A2010"/><circle cx="28" cy="11" r="2.5" fill="#3A2010"/><circle cx="9.2" cy="10.2" r=".8" fill="white"/><circle cx="27.2" cy="10.2" r=".8" fill="white"/><ellipse cx="19" cy="23" rx="13" ry="9" fill="#60C050"/><ellipse cx="19" cy="26" rx="9" ry="5" fill="#90E880"/><path d="M14 23 Q19 27 24 23" stroke="#3A7030" stroke-width="1.5" fill="none" stroke-linecap="round"/><ellipse cx="8" cy="29" rx="5" ry="3" fill="#60C050"/><ellipse cx="30" cy="29" rx="5" ry="3" fill="#60C050"/></svg>`
   ];
   let nextExpected = 1, placedCount = 0;
-  let marimba=null, audioReady=false;
-  let dragNum = null, ghostOffX = 0, ghostOffY = 0, activeSlot = null;
+    /* ── Audio ── */
+  let marimba = null, audioReady = false;
 
-  /* ── Audio ── */
-  function initSound(){
-    if(audioReady||!window.Tone)return;
-    try{
-      marimba=new Tone.Synth({
-        oscillator:{type:'triangle'},
-        envelope:{attack:.002,decay:.35,sustain:.1,release:.6}
-      }).toDestination();
-      audioReady=true;
-    }catch(e){console.warn('音效初始化失敗',e);}
-  }
-  function ensureAudio(){
-    if(window.Tone&&Tone.context.state!=='running') Tone.start();
-  }
-  function initAudio(){ initSound(); ensureAudio(); }
-      envelope: { attack: .002, decay: .35, sustain: .1, release: .6 }
-    }).toDestination();
-    audioReady = true;
-  }
-  function playNote(n) {
-    initAudio();
-    try { Tone.start(); marimba.triggerAttackRelease(NOTES[n - 1], '8n', Tone.now()); } catch (e) {}
-  }
-  function playError() {
-    initAudio();
-    try { Tone.start().then(()=>marimba.triggerAttackRelease('A3','16n',Tone.now())); } catch(e) {}
-  }
-  function playFanfare() {
-    initAudio();
+  function initSound() {
+    if (audioReady || !window.Tone) return;
     try {
-      Tone.start();
-      const now = Tone.now();
-      ['C4', 'E4', 'G4', 'C5', 'E5', 'G5'].forEach((n, i) => marimba.triggerAttackRelease(n, '8n', now + i * .14));
-    } catch (e) {}
+      marimba = new Tone.Synth({
+        oscillator: { type: 'triangle' },
+        envelope: { attack: .002, decay: .35, sustain: .1, release: .6 }
+      }).toDestination();
+      audioReady = true;
+    } catch(e) { console.warn('音效初始化失敗', e); }
   }
 
-  /* ── Helpers ── */
+  function ensureAudio() {
+    if (window.Tone && Tone.context.state !== 'running') Tone.start();
+  }
+
+  function playNote(n) {
+    try {
+      ensureAudio();
+      if (!marimba || Tone.context.state !== 'running') return;
+      marimba.triggerAttackRelease(NOTES[Math.min(n-1, NOTES.length-1)], '8n', Tone.now());
+    } catch(e) {}
+  }
+
+  function playError() {
+    try {
+      ensureAudio();
+      if (!marimba || Tone.context.state !== 'running') return;
+      marimba.triggerAttackRelease('A3', '16n', Tone.now());
+    } catch(e) {}
+  }
+
+  function playFanfare() {
+    try {
+      ensureAudio();
+      if (!marimba || Tone.context.state !== 'running') return;
+      const now = Tone.now();
+      ['C4','E4','G4','C5','E5','G5'].forEach((n,i) => marimba.triggerAttackRelease(n, '8n', now + i * .14));
+    } catch(e) {}
+  }
+
   function shuffle(a) {
     let r = [...a];
     for (let i = r.length - 1; i > 0; i--) {
@@ -759,6 +763,7 @@
   }
 
   window.initGame = initGame;
+  initSound();
   initGame();
 
   window.addEventListener('resize', buildRails);
